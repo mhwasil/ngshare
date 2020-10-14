@@ -1,0 +1,50 @@
+Congrats, ngshare should be installed!
+To get started, add the following to your JupyterHub helm chart's values:
+
+hub:
+  extraConfig:
+    ngshare.py: |
+      c.JupyterHub.services.append({
+        'name': '{{ include "ngshare.name" . }}',
+        'url': 'http://{{ include "ngshare.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.deployment.port }}',
+        'api_token': '{{ include "ngshare.getToken" . }}'})
+
+Afterwards, install ngshare_exchange in every Docker image that has nbgrader.
+Then, place the following in /etc/jupyter/nbgrader_config.py:
+
+from ngshare_exchange import configureExchange
+c=get_config()
+configureExchange(c, 'http://{{ include "ngshare.fullname" .}}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.deployment.port }}/services/{{ include "ngshare.name" . }}')
+# Add the following line to let students access courses without configuration
+# For more information, read Notes for Instructors in the documentation
+c.CourseDirectory.course_id = '*'
+
+Read the documentation for more detailed instructions:
+https://ngshare.readthedocs.io/en/latest/user_guide/install_z2jh.html
+
+Please let us know on Github if you encounter any issues, thanks!
+{{- if .Values.ngshare.hub_api_token_is_random }}
+
+WARNING: You didn't specify an API token, and one is generated automatically for you.
+This will change every time you do a helm install or upgrade on ngshare,
+so please consider specifying it explicitly in values.yaml under ngshare.hub_api_token
+{{- end }}
+{{- if gt .Values.deployment.replicaCount 1.0 }}
+
+WARNING: You have specified more than one replica for ngshare.
+This means the PVC for it will be mounted ReadWriteMany.
+Make sure you have a storage provisioner that supports that.
+We haven't tested whether sqlite will break when it's mounted multiple times,
+so you are walking into uncharted territory here. Please reconsider.
+{{- end }}
+{{- if not .Values.ngshare.admins }}
+
+WARNING: You have specified no admin users.
+Only admins can create courses, so please add an admin user to the configuration.
+{{- end }}
+{{- if .Values.ngshare.debug }}
+
+WARNING: DEBUG MODE IS NOW ON!!!!!!
+DO NOT USE THIS IN PRODUCTION. This will leak API tokens to users and
+allow people to dump the database, among other things. You have been warned.
+{{- end }}

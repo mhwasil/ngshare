@@ -1,0 +1,11 @@
+charts:
+  - name: helmchart/ngshare
+    imagePrefix: libretexts/
+    repo:
+      git: libretexts/ngshare-helm-repo
+      published: https://libretexts.github.io/ngshare-helm-repo
+    images:
+      ngshare:
+        dockerfilePath: Dockerfile
+        contextPath: .
+        valuesPath: image
